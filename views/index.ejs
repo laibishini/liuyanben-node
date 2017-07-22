@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>留言本</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <style type="text/css">
+        #chenggong, #shibai {
+            display: none;
+        }
+
+        .liuyankuai {
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<h1>我的留言本</h1>
+
+<div class="container">
+    <div class="row">
+        <form class="form-horizontal col-lg-6">
+            <div class="form-group">
+                <label for="xingming" class="col-sm-2 control-label">姓名</label>
+
+                <div class="col-sm-10">                                                  <!--用包-->
+                    <input type="text" class="form-control" id="xingming" name="xingming" placeholder="姓名">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="liuyan" class="col-sm-2 control-label">留言</label>
+
+                <div class="col-sm-10">
+                    <textarea class="form-control" rows="3" name="liuyan" id="liuyan"></textarea>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button id="tijiao" type="button" class="btn btn-success">提交</button>
+                </div>
+            </div>
+            <div class="alert alert-success" role="alert" id="chenggong">
+                <a href="#" class="alert-link">表单已经成功提交</a>
+            </div>
+            <div class="alert alert-danger" role="alert" id="shibai">
+                <a href="#" class="alert-link">表单提交失败</a>
+            </div>
+        </form>
+    </div>
+    <nav>
+        <ul class="pagination">
+
+
+            <% for(var i = 1 ; i <= pageamount ; i++){%>
+            <li class="yemaanniu" data-page="<%=i%>"><a href="#"><%=i%></a></li>
+            <%}%>
+
+
+        </ul>
+    </nav>
+    <div id="quanbuliuyan">
+
+    </div>
+</div>
+
+<script type="text/template" id="moban">
+    <div class="liuyankuai">
+        <p>【姓名】{{= xingming }}</p>
+        <p>【留言】{{= liuyan }}</p>
+        <p>【时间】{{= shijian }}</p>
+
+        <p id="shanchu"><a  href="/shanchu?id={{=id}}" class="shanchu">删除</a></p>
+    </div>
+</script>
+
+
+<script src="js/jquery-1.11.3.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/underscore-noflect.js"></script>
+
+<script>
+    /*给第一个页码按钮补一个颜色*/
+    var newpage = 1;
+    $(".yemaanniu:first").addClass("active")
+
+        /*添加监视*/
+    $(".yemaanniu").on("click",function(){
+         newpage = parseInt($(this).attr("data-page"));
+
+        $(this).addClass("active").siblings().removeClass("active")
+
+        getDate(newpage)
+
+    })
+
+
+    //读出来的数据要显示出来在主要里面
+    getDate(1)
+  function getDate(page){
+
+
+      $.get("/du?page=" + (page - 1),function(result){
+          /*弄成模版函数*/
+          $("#quanbuliuyan").html("");
+          var compiled = _.template($("#moban").html());
+          /*首先要清空留言里的所有列表*/
+
+
+          /*然后循环出来对象数组的里的数据*/
+          for(var i = 0 ; i < result.result.length; i ++ ){
+
+              var html = compiled({
+                  xingming:result.result[i].xingming,
+                  liuyan  :result.result[i].liuyan,
+                  shijian :result.result[i].shijian,
+                  id:result.result[i]._id
+              });
+              /*遍历完成添加节点操作*/
+              $("#quanbuliuyan").append($(html));
+
+
+          }
+
+
+
+      });
+  }
+
+
+
+
+
+
+
+
+
+    $("#tijiao").on("click",function(){
+      /*提交什么*/
+        $("#shibai").hide();
+        $("#chenggong").hide();
+        $.post("/tijiao",{
+            "xingming":$("#xingming").val(),
+            "liuyan":$("#liuyan").val()
+
+        },function(result){
+            if(result.result == -1){
+
+                $("#shibai").fadeIn();
+            }else if(result.result== 1){
+                    /*/数据库真的存储了，但是当前页面无法显示。这是因为需要刷新
+                     //才能用ajax从/du中得到新的。所以我们先用一个假盒子凑出来。*/
+                /*那么真的村春成功了*/
+                $("#chenggong").fadeIn();
+                var compiled = _.template($("#moban").html());
+                var html = compiled({liuyan: $("#liuyan").val(), xingming: $("#xingming").val(), shijian: new Date(),id:new Date()});
+
+                $(html).insertBefore($("#quanbuliuyan"));
+                $("#shanchu").hide()
+
+
+
+            }
+        })
+
+
+    })
+
+
+
+
+</script>
+</body>
+</html>
